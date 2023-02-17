@@ -5,15 +5,18 @@ async function getWeather(location) {
     );
     let data = await response.json();
 
-    return {
-      city: data.name,
-      country: data.sys.country,
-      temperature: data.main.temp,
-      description: data.weather[0].description,
-    };
+    return interpretWeather(data);
   } catch (error) {
     console.log(error);
   }
+}
+function interpretWeather(data) {
+  return {
+    city: data.name,
+    country: data.sys.country,
+    temperature: data.main.temp,
+    description: data.weather[0].description,
+  };
 }
 
 let weather = getWeather("london").then((weather) => {
