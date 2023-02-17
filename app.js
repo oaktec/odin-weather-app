@@ -15,7 +15,11 @@ async function getGif(description) {
       `https://api.giphy.com/v1/gifs/translate?api_key=AJJRfT5nQ3pUksOJEeUgMONW3EiGMUBl&s=${description}`
     );
     let data = await response.json();
-    return data.data.images.original.url;
+    console.log(data);
+    return {
+      src: data.data.images.original.url,
+      ratio: data.data.images.original.width / data.data.images.original.height,
+    };
   } catch (err) {
     console.log(err);
   }
@@ -57,7 +61,11 @@ function presentWeather(weather) {
   temperature.textContent = `${(weather.temperature - 273.15).toFixed(2)}°C`;
 
   gifLoading.textContent = "Loading relevant gif...";
-  getGif(weather.description).then((src) => (weatherGif.src = src));
+  getGif(weather.description).then((data) => {
+    weatherGif.src = data.src;
+    weatherGif.style.width = `min(50vw, 50vh * ${data.ratio})`;
+    weatherGif.style.height = `min(50vh, 50vw / ${data.ratio})`;
+  });
   gifLoading.textContent = "";
 }
 function renderLoading() {
