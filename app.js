@@ -9,6 +9,17 @@ async function getWeather(location) {
     console.log(error);
   }
 }
+async function getGif(description) {
+  try {
+    let response = await fetch(
+      `https://api.giphy.com/v1/gifs/translate?api_key=AJJRfT5nQ3pUksOJEeUgMONW3EiGMUBl&s=${description}`
+    );
+    let data = await response.json();
+    return data.data.images.original.url;
+  } catch (err) {
+    console.log(err);
+  }
+}
 function interpretWeather(data) {
   return {
     city: data.name,
@@ -38,10 +49,27 @@ function presentWeather(weather) {
   const cityName = document.querySelector("#city-name");
   const weatherDescription = document.querySelector("#weather-description");
   const temperature = document.querySelector("#temp");
+  const weatherGif = document.querySelector("#weather-gif");
+  const gifLoading = document.querySelector("#gif-loading");
 
   cityName.textContent = `${weather.city}, ${weather.country}`;
   weatherDescription.textContent = weather.description;
   temperature.textContent = `${(weather.temperature - 273.15).toFixed(2)}°C`;
+
+  gifLoading.textContent = "Loading relevant gif...";
+  getGif(weather.description).then((src) => (weatherGif.src = src));
+  gifLoading.textContent = "";
+}
+function renderLoading() {
+  const cityName = document.querySelector("#city-name");
+  const weatherDescription = document.querySelector("#weather-description");
+  const temperature = document.querySelector("#temp");
+  const weatherGif = document.querySelector("#weather-gif");
+
+  cityName.textContent = "";
+  weatherDescription.textContent = "Loading...";
+  temperature.textContent = "";
+  weatherGif.src = "";
 }
 
 const cityInput = document.querySelector("#city-input");
@@ -51,6 +79,7 @@ searchButton.addEventListener("click", (e) => {
     e.preventDefault();
     return;
   }
+  renderLoading();
   getWeather(cityInput.value).then((data) => {
     presentWeather(data);
   });
