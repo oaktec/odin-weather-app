@@ -18,7 +18,32 @@ function interpretWeather(data) {
     description: data.weather[0].description,
   };
 }
+function validateSearch() {
+  if (cityInput.value === "") {
+    alert("Please enter a city name");
+    return false;
+  }
+  if (cityInput.value.length < 3) {
+    alert("Please enter a valid city name");
+    return false;
+  }
+  if (cityInput.value.length > 20) {
+    alert("Please enter a valid city name");
+    return false;
+  }
+  if (cityInput.value.match(/^[a-zA-Z]+$/)) return true;
+  return false;
+}
 
-let weather = getWeather("london").then((weather) => {
-  console.log(weather);
+const cityInput = document.querySelector("#city-input");
+const searchButton = document.querySelector("#search-btn");
+searchButton.addEventListener("click", (e) => {
+  if (!validateSearch()) {
+    e.preventDefault();
+    return;
+  }
+  getWeather(cityInput.value).then((data) => {
+    console.log(data);
+  });
+  e.preventDefault();
 });
