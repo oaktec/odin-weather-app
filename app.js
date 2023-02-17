@@ -4,9 +4,13 @@ async function getWeather(location) {
       `https://api.openweathermap.org/data/2.5/weather?q=${location.toLowerCase()}&APPID=3958700c4aae1e50012ae6d3204ebd41`
     );
     let data = await response.json();
+    if (data.cod === "404") {
+      alert(`Could not find city: ${location}`);
+      return Promise.reject("Could not find city");
+    }
     return interpretWeather(data);
   } catch (error) {
-    console.log(error);
+    console.log("shizer", error);
   }
 }
 async function getGif(description) {
@@ -15,7 +19,6 @@ async function getGif(description) {
       `https://api.giphy.com/v1/gifs/translate?api_key=AJJRfT5nQ3pUksOJEeUgMONW3EiGMUBl&s=${description}`
     );
     let data = await response.json();
-    console.log(data);
     return {
       src: data.data.images.original.url,
       ratio: data.data.images.original.width / data.data.images.original.height,
@@ -32,24 +35,24 @@ function interpretWeather(data) {
     description: data.weather[0].description,
   };
 }
-function validateSearch() {
-  if (cityInput.value === "") {
+function validateSearch(city) {
+  if (city === "") {
     alert("Please enter a city name");
     return false;
   }
-  if (cityInput.value.length < 3) {
+  if (city.length < 3) {
     alert("Please enter a valid city name");
     return false;
   }
-  if (cityInput.value.length > 20) {
+  if (city.length > 20) {
     alert("Please enter a valid city name");
     return false;
   }
-  if (cityInput.value.match(/^[a-zA-Z]+$/)) return true;
+  if (city.match(/^[a-zA-Z ]+$/)) return true;
   alert("Please enter a valid city name");
   return false;
 }
-function presentWeather(weather) {
+function presentWeather(weather, stringifyTempFn) {
   const cityName = document.querySelector("#city-name");
   const weatherDescription = document.querySelector("#weather-description");
   const temperature = document.querySelector("#temp");
@@ -58,13 +61,14 @@ function presentWeather(weather) {
 
   cityName.textContent = `${weather.city}, ${weather.country}`;
   weatherDescription.textContent = weather.description;
-  temperature.textContent = `${(weather.temperature - 273.15).toFixed(2)}°C`;
+  temperature.textContent = stringifyTempFn(weather.temperature);
 
   gifLoading.textContent = "Loading relevant gif...";
   getGif(weather.description).then((data) => {
     weatherGif.src = data.src;
     weatherGif.style.width = `min(50vw, 50vh * ${data.ratio})`;
     weatherGif.style.height = `min(50vh, 50vw / ${data.ratio})`;
+    weatherGif.style.display = "block";
   });
   gifLoading.textContent = "";
 }
@@ -78,18 +82,49 @@ function renderLoading() {
   weatherDescription.textContent = "Loading...";
   temperature.textContent = "";
   weatherGif.src = "";
+  weatherGif.style.display = "none";
+}
+function kelvinToFahrenheit(kelvin) {
+  return (kelvin - 273.15) * (9 / 5) + 32;
+}
+function kelvinToCelsius(kelvin) {
+  return kelvin - 273.15;
+}
+function stringifyFahrenheitFromKelvin(kelvin) {
+  return `${kelvinToFahrenheit(kelvin).toFixed(2)}°F`;
+}
+function stringifyCelsiusFromKelvin(kelvin) {
+  return `${kelvinToCelsius(kelvin).toFixed(2)}°C`;
 }
 
-const cityInput = document.querySelector("#city-input");
-const searchButton = document.querySelector("#search-btn");
-searchButton.addEventListener("click", (e) => {
-  if (!validateSearch()) {
+(function () {
+  const cityInput = document.querySelector("#city-input");
+  const searchButton = document.querySelector("#search-btn");
+  let stringifyTempFn = stringifyCelsiusFromKelvin;
+  searchButton.addEventListener("click", (e) => {
     e.preventDefault();
-    return;
-  }
-  renderLoading();
-  getWeather(cityInput.value).then((data) => {
-    presentWeather(data);
+    let city = cityInput.value;
+    if (!validateSearch(city)) return;
+    renderLoading();
+    getWeather(cityInput.value)
+      .then((data) => {
+        presentWeather(data, stringifyTempFn);
+      })
+      .catch((err) => {
+        document.querySelector("#weather-description").textContent = "";
+        console.log(err);
+      });
   });
-  e.preventDefault();
-});
+  const unitToggle = document.querySelector("#unit-toggle-input");
+  unitToggle.addEventListener("change", (e) => {
+    // true = fahrenheit, false = celsius
+    stringifyTempFn = e.target.checked
+      ? stringifyFahrenheitFromKelvin
+      : stringifyCelsiusFromKelvin;
+    getWeather(cityInput.value)
+      .then((data) => {
+        presentWeather(data, stringifyTempFn);
+      })
+      .catch((err) => console.log(err));
+  });
+})();
